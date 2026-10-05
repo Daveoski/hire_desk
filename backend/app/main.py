@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.auth.router import router as auth_router
-from app.calendar.router import router as calendar_router
 from app.candidates.public_router import router as public_router
 from app.candidates.router import router as candidates_router
 from app.companies.router import router as companies_router
@@ -29,7 +28,6 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
-app.include_router(calendar_router)
 app.include_router(users_router)
 app.include_router(companies_router)
 app.include_router(jobs_router)
