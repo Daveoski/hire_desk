@@ -40,6 +40,7 @@ export interface Application {
   id: string;
   job_id: string;
   job_title: string;
+  job_hiring_manager_id: string | null;
   full_name: string;
   email: string;
   phone: string;
@@ -65,6 +66,7 @@ export interface Interview {
   ends_at: string;
   status: InterviewStatus;
   duration_minutes: number;
+  synced: boolean;
 }
 
 export interface Rating {

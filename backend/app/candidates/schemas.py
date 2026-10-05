@@ -13,6 +13,7 @@ class ApplicationRead(BaseModel):
     id: uuid.UUID
     job_id: uuid.UUID
     job_title: str
+    job_hiring_manager_id: uuid.UUID | None
     full_name: str
     email: str
     phone: str
@@ -23,7 +24,7 @@ class ApplicationRead(BaseModel):
 
     @classmethod
     def from_rows(cls, application: Application, job: Job) -> "ApplicationRead":
-        return cls(**application.model_dump(), job_title=job.title)
+        return cls(**application.model_dump(), job_title=job.title, job_hiring_manager_id=job.hiring_manager_id)
 
 
 class ApplicationReceipt(BaseModel):

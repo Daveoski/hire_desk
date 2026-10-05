@@ -60,6 +60,29 @@ export const useScorecards = (applicationId: string) =>
     queryFn: () => api.get<ApplicationScorecards>(`/applications/${applicationId}/scorecards`),
   });
 
+// ---- Google Calendar sync ----
+
+export const useGoogleStatus = () =>
+  useQuery({ queryKey: ["google"], queryFn: () => api.get<{ connected: boolean }>("/calendar/google/status") });
+
+export function useGoogleConnect() {
+  return useMutation({
+    mutationFn: () => api.get<{ url: string }>("/calendar/google/authorize"),
+    // The consent happens on Google's own page; it sends the browser back to us.
+    onSuccess: ({ url }) => {
+      window.location.href = url;
+    },
+  });
+}
+
+export function useGoogleDisconnect() {
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: () => api.del<{ connected: boolean }>("/calendar/google"),
+    onSuccess: () => refresh("google"),
+  });
+}
+
 // ---- Changing data ----
 
 // Any change to a candidate can affect many screens, so these refresh the related lists.

@@ -45,6 +45,8 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://hiredesk:hiredesk@db:5432/hiredesk
       CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,https://3000-${BASE44_PUBLIC_HOST_SUFFIX}"
+      GOOGLE_REDIRECT_URI: "https://8000-${BASE44_PUBLIC_HOST_SUFFIX}/calendar/google/callback"
+      FRONTEND_URL: "https://3000-${BASE44_PUBLIC_HOST_SUFFIX}"
     env_file:
       - /run/base44/app.env
     command: ["sh", "-ec", "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
