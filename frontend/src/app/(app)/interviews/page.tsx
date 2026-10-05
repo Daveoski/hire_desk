@@ -2,13 +2,9 @@
 
 import { CalendarClock } from "lucide-react";
 import Link from "next/link";
-import { useEffect } from "react";
-import { toast } from "sonner";
-import { GoogleCalendarCard } from "@/components/features/google-calendar-card";
 import { EmptyState, ErrorState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { Avatar } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,15 +24,6 @@ export default function InterviewsPage() {
   const interviews = useInterviews();
   const applications = useApplications();
   const users = useUsers(isManager(user));
-
-  // The Google callback lands here with ?google=connected; confirm and clean the URL.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("google") === "connected") {
-      toast.success("Google Calendar connected");
-      window.history.replaceState(null, "", "/interviews");
-    }
-  }, []);
 
   const interviewerName = (id: string) =>
     id === user?.id ? "You" : (users.data?.find((item) => item.id === id)?.full_name ?? "Interviewer");
@@ -66,7 +53,6 @@ export default function InterviewsPage() {
                     <p className="font-semibold">{formatDateTime(item.starts_at)}</p>
                     <p className="text-muted-foreground">{item.duration_minutes} min</p>
                   </div>
-                  {item.synced && <Badge variant="outline">Synced</Badge>}
                 </Link>
               </li>
             );
@@ -84,11 +70,6 @@ export default function InterviewsPage() {
       />
       {interviews.isError && <ErrorState message={interviews.error.message} />}
       {interviews.isLoading && <Skeleton className="h-48" />}
-      {isManager(user) && (
-        <div className="mb-6">
-          <GoogleCalendarCard />
-        </div>
-      )}
       {interviews.data && (
         <Tabs defaultValue="scheduled">
           <TabsList>

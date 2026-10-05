@@ -35,12 +35,8 @@
 - Interview events (scheduled / cancelled / completed-by-scorecard) email the
   interviewer plus the job's hiring manager and every company admin
   (`app/interviews/notifications.py`, sent with Resend background tasks).
-- Google Calendar sync is optional: needs `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
-  and `GOOGLE_REDIRECT_URI` (set in compose from `BASE44_PUBLIC_HOST_SUFFIX`).
-  A user connects via `/calendar/google/authorize` -> Google -> `/calendar/google/callback`
-  (state is a short-lived JWT). Scheduled interviews are pushed to the scheduler's
-  calendar with the interviewer as attendee; cancelling deletes the event. All
-  sync failures are logged, never raised.
+- Google Calendar sync was removed on request (migration 0003 drops its
+  tables/columns); interviews are scheduled only inside the app.
 - Screening (stage moves into or out of `screen`, incl. rejecting at `screen`)
   is restricted to the job's hiring manager; a company admin may screen only a
   job that has no hiring manager (`ensure_screener` in `candidates/service.py`).

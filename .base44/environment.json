@@ -28,16 +28,6 @@
       "name": "RESEND_API_KEY",
       "description": "Optional: Resend API key, for invitation emails (resend.io → API Keys); without it emails are skipped",
       "requiredAtBoot": false
-    },
-    {
-      "name": "GOOGLE_CLIENT_ID",
-      "description": "Optional: Google Cloud OAuth 2.0 Client ID, for Google Calendar sync. Enable the Google Calendar API and add the redirect URI https://8000-<preview-host>/calendar/google/callback",
-      "requiredAtBoot": false
-    },
-    {
-      "name": "GOOGLE_CLIENT_SECRET",
-      "description": "Optional: Google Cloud OAuth 2.0 Client Secret (same Google Cloud Credentials page)",
-      "requiredAtBoot": false
     }
   ]
 }

@@ -66,7 +66,6 @@ export interface Interview {
   ends_at: string;
   status: InterviewStatus;
   duration_minutes: number;
-  synced: boolean;
 }
 
 export interface Rating {

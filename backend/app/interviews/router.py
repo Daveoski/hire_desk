@@ -8,7 +8,6 @@ from sqlmodel import Session, col
 
 from app.auth.dependencies import CurrentUser, ManagerUser
 from app.auth.permissions import get_visible_application, get_visible_interview, visible_interviews
-from app.calendar.service import remove_interview_event, sync_interview_event
 from app.candidates.models import Application
 from app.db.session import DbSession
 from app.interviews.models import Interview, InterviewStatus
@@ -61,9 +60,6 @@ def schedule_interview(
             raise HTTPException(409, "This interviewer already has an interview at that time") from error
         raise
 
-    # The calendar event is created on the scheduling manager's Google Calendar
-    # (best effort: a Google problem is logged, the interview itself stands).
-    sync_interview_event(db, manager, interview, application, job, interviewer)
     # Emails to the interviewer plus the hiring manager and company admin(s).
     notify_scheduled(db, background_tasks, interview, application, job, interviewer)
     return interview
@@ -85,7 +81,7 @@ def read_interview(interview_id: uuid.UUID, user: CurrentUser, db: DbSession):
 
 @router.post("/{interview_id}/cancel", response_model=InterviewRead)
 def cancel_interview(interview_id: uuid.UUID, manager: ManagerUser, db: DbSession, background_tasks: BackgroundTasks):
-    """Cancelling frees the interviewer's time slot and removes the calendar event."""
+    """Cancelling frees the interviewer's time slot."""
     interview = get_visible_interview(db, manager, interview_id)
     if interview.status != InterviewStatus.scheduled:
         raise HTTPException(409, f"A {interview.status.value} interview cannot be cancelled")
@@ -94,6 +90,5 @@ def cancel_interview(interview_id: uuid.UUID, manager: ManagerUser, db: DbSessio
     db.commit()
 
     application, job, interviewer = interview_context(db, interview)
-    remove_interview_event(db, interview)
     notify_cancelled(db, background_tasks, interview, application, job, interviewer)
     return interview

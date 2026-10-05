@@ -29,13 +29,6 @@ class InterviewRead(BaseModel):
     starts_at: datetime
     ends_at: datetime
     status: InterviewStatus
-    google_event_id: str | None = None
-
-    @computed_field
-    @property
-    def synced(self) -> bool:
-        """True when the interview was pushed to a Google Calendar."""
-        return self.google_event_id is not None
 
     @computed_field
     @property

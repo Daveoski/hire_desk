@@ -25,10 +25,6 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     email_from: str = "HireDesk <onboarding@resend.dev>"
 
-    # Google Calendar sync (empty values disable the feature without breaking the app).
-    google_client_id: str = ""
-    google_client_secret: str = ""
-    google_redirect_uri: str = ""
     frontend_url: str = "http://localhost:3000"
 
 

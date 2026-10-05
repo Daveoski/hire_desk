@@ -30,7 +30,3 @@ class Interview(SQLModel, table=True):
     starts_at: datetime = Field(sa_type=TIMESTAMPTZ)
     ends_at: datetime = Field(sa_type=TIMESTAMPTZ)
     status: InterviewStatus = Field(default=InterviewStatus.scheduled, sa_type=enum_column(InterviewStatus))
-    # Google Calendar sync: the event pushed on the owner's calendar, if any.
-    google_event_id: str | None = Field(default=None)
-    google_calendar_id: str | None = Field(default=None)
-    google_owner_id: uuid.UUID | None = Field(default=None, foreign_key="users.id")
