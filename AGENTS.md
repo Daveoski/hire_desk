@@ -11,9 +11,11 @@
 ## Non-obvious quirks
 
 - The root `pyproject.toml` + `uv.lock` + `src/hiredesk_official/` + root `main.py`
-  exist only for Vercel's root service. Local dev runs the backend directly from
-  `backend/` (`uvicorn app.main:app`), NOT via uv — `backend/requirements.txt`
-  is the authoritative dep list for this environment.
+  are leftovers from an earlier Vercel root service: the root `vercel.json` now
+  declares only the `backend/` and `frontend/` services, so nothing here builds
+  from the repo root. Local dev runs the backend directly from `backend/`
+  (`uvicorn app.main:app`), NOT via uv — `backend/requirements.txt` is the
+  authoritative dep list for this environment.
 - `backend/app/core/config.py` points its `.env` file at `backend/.env`, but real
   env vars take precedence; secrets arrive via `/run/base44/app.env` (compose
   `env_file`). `DATABASE_URL` and `CORS_ORIGINS` are set inline in compose.
