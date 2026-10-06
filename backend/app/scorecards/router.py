@@ -1,13 +1,16 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 from sqlmodel import Session, col, select
 
 from app.auth.dependencies import CurrentUser, InterviewerUser
 from app.auth.permissions import get_visible_application
+from app.candidates.models import Application
 from app.db.common import utcnow
 from app.db.session import DbSession
 from app.interviews.models import Interview, InterviewStatus
+from app.interviews.notifications import notify_completed
+from app.jobs.models import Job
 from app.scorecards.models import Scorecard, ScorecardRating, ScorecardStatus
 from app.scorecards.schemas import ApplicationScorecards, ScorecardRead, ScorecardSubmit
 from app.users.models import Role, User
@@ -27,7 +30,9 @@ def build_scorecard_read(scorecard: Scorecard, interview: Interview, ratings: li
 
 
 @router.put("/interviews/{interview_id}/scorecard", response_model=ScorecardRead)
-def submit_scorecard(interview_id: uuid.UUID, body: ScorecardSubmit, interviewer: InterviewerUser, db: DbSession):
+def submit_scorecard(
+    interview_id: uuid.UUID, body: ScorecardSubmit, interviewer: InterviewerUser, db: DbSession, background_tasks: BackgroundTasks
+):
     """An interviewer submits the scorecard of their own interview. It cannot be changed afterwards."""
     # The rows are locked, so a double click cannot submit the scorecard twice.
     row = db.exec(
@@ -62,6 +67,11 @@ def submit_scorecard(interview_id: uuid.UUID, body: ScorecardSubmit, interviewer
     interview.status = InterviewStatus.completed
     db.add_all([scorecard, interview, *ratings])
     db.commit()
+
+    # The hiring manager and company admin(s) are told the interview is done.
+    application = db.get(Application, interview.application_id)
+    job = db.get(Job, application.job_id)
+    notify_completed(db, background_tasks, interview, application, job, interviewer)
     return build_scorecard_read(scorecard, interview, ratings)
 
 

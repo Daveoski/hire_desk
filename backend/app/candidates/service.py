@@ -4,8 +4,18 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.candidates.models import Application, StageHistory
-from app.jobs.models import Stage
-from app.users.models import User
+from app.jobs.models import Job, Stage
+from app.users.models import Role, User
+
+
+def ensure_screener(user: User, job: Job) -> None:
+    """Screening (moving a candidate into or out of the screen stage) is the hiring
+    manager's job; a company admin may screen only a job that has no hiring manager."""
+    if user.role == Role.hiring_manager and job.hiring_manager_id == user.id:
+        return
+    if user.role == Role.company_admin and job.hiring_manager_id is None:
+        return
+    raise HTTPException(403, "Only this job's hiring manager can screen candidates")
 
 # The pipeline rules: a candidate moves one step forward, or is rejected from any open stage.
 ALLOWED_TRANSITIONS: dict[Stage, set[Stage]] = {

@@ -12,7 +12,7 @@ from app.candidates.schemas import (
     StageHistoryRead,
     StageMove,
 )
-from app.candidates.service import change_stage
+from app.candidates.service import change_stage, ensure_screener
 from app.db.session import DbSession
 from app.jobs.models import Stage
 
@@ -47,7 +47,10 @@ def read_application(application_id: uuid.UUID, user: CurrentUser, db: DbSession
 @router.patch("/{application_id}/stage", response_model=ApplicationRead)
 def move_application(application_id: uuid.UUID, body: StageMove, manager: ManagerUser, db: DbSession):
     """Move a candidate forward: applied -> screen -> interview -> offer."""
-    _, job = get_visible_application(db, manager, application_id)
+    application, job = get_visible_application(db, manager, application_id)
+    # Screening - into the screen stage or out of it - is reserved to the screener.
+    if Stage.screen in (application.stage, body.stage):
+        ensure_screener(manager, job)
     application = change_stage(db, application_id, body.stage, manager)
     return ApplicationRead.from_rows(application, job)
 
@@ -55,7 +58,9 @@ def move_application(application_id: uuid.UUID, body: StageMove, manager: Manage
 @router.post("/{application_id}/decision", response_model=ApplicationRead)
 def decide_application(application_id: uuid.UUID, body: DecisionRequest, manager: ManagerUser, db: DbSession):
     """The final decision. A candidate can only be hired from the offer stage."""
-    _, job = get_visible_application(db, manager, application_id)
+    application, job = get_visible_application(db, manager, application_id)
+    if application.stage == Stage.screen:  # rejecting during screening is the screener's call
+        ensure_screener(manager, job)
     application = change_stage(db, application_id, body.decision, manager)
     return ApplicationRead.from_rows(application, job)
 

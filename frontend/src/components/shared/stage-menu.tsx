@@ -15,16 +15,27 @@ import {
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useDecide, useMoveStage } from "@/lib/queries";
 import { isFinal, MOVABLE_STAGES, STAGE_LABEL } from "@/lib/stages";
-import type { Application } from "@/lib/types";
+import type { Application, Stage } from "@/lib/types";
+import { useAuthStore } from "@/stores/auth-store";
 
 // Managers use this to move a candidate or make the final decision.
 // The backend enforces the order of the stages, so a refused move shows the backend message.
 export function StageMenu({ application }: { application: Application }) {
   const move = useMoveStage();
   const decide = useDecide();
+  const user = useAuthStore((state) => state.user);
   const [confirm, setConfirm] = useState<"hired" | "rejected" | null>(null);
 
   if (isFinal(application.stage)) return null;
+
+  // Screening (into or out of the "screen" stage) is the job's hiring manager's job;
+  // a company admin may screen only a job without a hiring manager.
+  const canScreen =
+    user?.role === "hiring_manager"
+      ? application.job_hiring_manager_id === user.id
+      : user?.role === "company_admin" && application.job_hiring_manager_id === null;
+  const touchesScreening = (stage: Stage) => stage === "screen" || application.stage === "screen";
+  const allowedMoves = MOVABLE_STAGES.filter((stage) => canScreen || !touchesScreening(stage));
 
   const onMove = (stage: (typeof MOVABLE_STAGES)[number]) =>
     move.mutate(
@@ -62,7 +73,7 @@ export function StageMenu({ application }: { application: Application }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuLabel>Move to stage</DropdownMenuLabel>
-          {MOVABLE_STAGES.map((stage) => (
+          {allowedMoves.map((stage) => (
             <DropdownMenuItem key={stage} disabled={stage === application.stage} onSelect={() => onMove(stage)}>
               {STAGE_LABEL[stage]}
             </DropdownMenuItem>
@@ -71,7 +82,11 @@ export function StageMenu({ application }: { application: Application }) {
           <DropdownMenuItem disabled={application.stage !== "offer"} onSelect={() => setConfirm("hired")}>
             Hire candidate
           </DropdownMenuItem>
-          <DropdownMenuItem className="text-destructive" onSelect={() => setConfirm("rejected")}>
+          <DropdownMenuItem
+            className="text-destructive"
+            disabled={!canScreen && application.stage === "screen"}
+            onSelect={() => setConfirm("rejected")}
+          >
             Reject candidate
           </DropdownMenuItem>
         </DropdownMenuContent>

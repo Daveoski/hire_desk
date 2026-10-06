@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     email_from: str = "HireDesk <onboarding@resend.dev>"
 
+    frontend_url: str = "http://localhost:3000"
+
 
 @lru_cache
 def get_settings() -> Settings:

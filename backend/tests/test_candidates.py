@@ -118,8 +118,14 @@ def test_a_candidate_can_be_rejected_at_any_open_stage(world):
     application_id = world.apply()
     world.client.patch(f"/applications/{application_id}/stage", headers=world.manager, json={"stage": "screen"})
 
-    decision = world.client.post(
+    # The job has a hiring manager, so screening decisions are the manager's, not the admin's.
+    refused = world.client.post(
         f"/applications/{application_id}/decision", headers=world.admin, json={"decision": "rejected"}
+    )
+    assert refused.status_code == 403
+
+    decision = world.client.post(
+        f"/applications/{application_id}/decision", headers=world.manager, json={"decision": "rejected"}
     )
     assert decision.status_code == 200
     assert decision.json()["stage"] == "rejected"

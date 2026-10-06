@@ -40,6 +40,7 @@ export interface Application {
   id: string;
   job_id: string;
   job_title: string;
+  job_hiring_manager_id: string | null;
   full_name: string;
   email: string;
   phone: string;

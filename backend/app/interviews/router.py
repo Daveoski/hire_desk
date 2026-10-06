@@ -4,19 +4,28 @@ from datetime import timedelta
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from psycopg.errors import ExclusionViolation
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import col
+from sqlmodel import Session, col
 
 from app.auth.dependencies import CurrentUser, ManagerUser
 from app.auth.permissions import get_visible_application, get_visible_interview, visible_interviews
-from app.core.email import send_email
+from app.candidates.models import Application
 from app.db.session import DbSession
 from app.interviews.models import Interview, InterviewStatus
+from app.interviews.notifications import notify_cancelled, notify_scheduled
 from app.interviews.schemas import InterviewCreate, InterviewRead
-from app.jobs.models import Stage
+from app.jobs.models import Job, Stage
 from app.scorecards.models import Scorecard
 from app.users.models import Role, User
 
 router = APIRouter(prefix="/interviews", tags=["Interviews"])
+
+
+def interview_context(db: Session, interview: Interview) -> tuple[Application, Job, User]:
+    """The rows an email needs: the candidate, the job and the interviewer."""
+    application = db.get(Application, interview.application_id)
+    job = db.get(Job, application.job_id)
+    interviewer = db.get(User, interview.interviewer_id)
+    return application, job, interviewer
 
 
 @router.post("", response_model=InterviewRead, status_code=201)
@@ -51,17 +60,8 @@ def schedule_interview(
             raise HTTPException(409, "This interviewer already has an interview at that time") from error
         raise
 
-    background_tasks.add_task(
-        send_email,
-        to=interviewer.email,
-        subject=f"Interview assigned: {application.full_name} for {job.title}",
-        text=(
-            f"Hi {interviewer.full_name},\n\n"
-            f"You have been assigned an interview with {application.full_name} for {job.title}.\n"
-            f"Start: {interview.starts_at.isoformat()}\n"
-            f"Duration: {body.duration_minutes} minutes\n"
-        ),
-    )
+    # Emails to the interviewer plus the hiring manager and company admin(s).
+    notify_scheduled(db, background_tasks, interview, application, job, interviewer)
     return interview
 
 
@@ -80,7 +80,7 @@ def read_interview(interview_id: uuid.UUID, user: CurrentUser, db: DbSession):
 
 
 @router.post("/{interview_id}/cancel", response_model=InterviewRead)
-def cancel_interview(interview_id: uuid.UUID, manager: ManagerUser, db: DbSession):
+def cancel_interview(interview_id: uuid.UUID, manager: ManagerUser, db: DbSession, background_tasks: BackgroundTasks):
     """Cancelling frees the interviewer's time slot."""
     interview = get_visible_interview(db, manager, interview_id)
     if interview.status != InterviewStatus.scheduled:
@@ -88,4 +88,7 @@ def cancel_interview(interview_id: uuid.UUID, manager: ManagerUser, db: DbSessio
     interview.status = InterviewStatus.cancelled
     db.add(interview)
     db.commit()
+
+    application, job, interviewer = interview_context(db, interview)
+    notify_cancelled(db, background_tasks, interview, application, job, interviewer)
     return interview
